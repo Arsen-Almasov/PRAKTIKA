@@ -1,65 +1,125 @@
-
 import pandas as pd
-from io import StringIO
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from IPython.display import display
 
-csv_data = """customer_id,age,monthly_income,city,visits_per_month,satisfaction_score
-1,19,18000,Бишкек,5,8
-2,22,25000,Ош,8,9
-3,25,32000,Бишкек,12,7
-4,31,45000,Каракол,6,8
-5,28,38000,Ош,10,9
-6,245,40000,Бишкек,7,6
-7,21,22000,Ош,4,8
-8,35,55000,Бишкек,15,9
-9,,28000,Ош,9,7
-10,24,,Бишкек,6,8
-11,29,42000,неизвестно,5,6
-12,33,48000,Бишкек,88,9
-13,26,35000,Ош,11,8
-14,41,950000,Бишкек,8,7
-15,20,15000,Каракол,3,9
-16,23,27000,Бишкек,7,8
-17,30,43000,Ош,10,
-18,27,36000,Бишкек,6,7
-19,38,60000,Ош,13,9
-20,18,15000,Бишкек,4,8
-21,32,47000,неизвестно,9,7
-22,24,29000,Ош,5,8
-23,36,52000,Бишкек,12,9
-24,28,39000,Каракол,7,8
-25,22,24000,Ош,6,7
-26,34,50000,Бишкек,14,9
-27,27,37000,Ош,8,8
-28,40,65000,Бишкек,10,7
-29,19,19000,Каракол,4,9
-30,31,46000,Ош,9,8
-"""
+data = {
+    "customer_id": list(range(1, 31)),
+    "age": [
+        19, 22, 25, 31, 28, 245, 21, 35, np.nan, 24,
+        29, 33, 26, 41, 20, 23, 30, 27, 38, 18,
+        32, 24, 36, 28, 22, 34, 27, 40, 19, 31
+    ],
+    "monthly_income": [
+        18000, 25000, 32000, 45000, 38000, 40000, 22000,
+        55000, 28000, np.nan, 42000, 48000, 35000, 950000,
+        15000, 27000, 43000, 36000, 60000, 15000, 47000,
+        29000, 52000, 39000, 24000, 50000, 37000, 65000,
+        19000, 46000
+    ],
+    "city": [
+        "Бишкек", "Ош", "Бишкек", "Каракол", "Ош", "Бишкек",
+        "Ош", "Бишкек", "Ош", "Бишкек", "неизвестно", "Бишкек",
+        "Ош", "Бишкек", "Каракол", "Бишкек", "Ош", "Бишкек",
+        "Ош", "Бишкек", "неизвестно", "Ош", "Бишкек", "Каракол",
+        "Ош", "Бишкек", "Ош", "Бишкек", "Каракол", "Ош"
+    ],
+    "visits_per_month": [
+        5, 8, 12, 6, 10, 7, 4, 15, 9, 6,
+        5, 88, 11, 8, 3, 7, 10, 6, 13, 4,
+        9, 5, 12, 7, 6, 14, 8, 10, 4, 9
+    ],
+    "satisfaction_score": [
+        8, 9, 7, 8, 9, 6, 8, 9, 7, 8,
+        6, 9, 8, 7, 9, 8, np.nan, 7, 9, 8,
+        7, 8, 9, 8, 7, 9, 8, 7, 9, 8
+    ]
+}
 
-df = pd.read_csv(StringIO(csv_data), na_values=["неизвестно"])
+df = pd.DataFrame(data)
 
-print("Размер таблицы:", df.shape)
-print("\nПервые пять записей:")
-print(df.head())
+print("Размер набора данных:", df.shape)
+display(df.head(10))
+print("Информация о столбцах:")
+df.info()
 
-print("\nТипы данных:")
-print(df.dtypes)
+print("\nОсновные статистические показатели:")
+display(df.describe().round(2))
 
 print("\nКоличество пропусков:")
-print(df.isna().sum())
+display(df.isna().sum().to_frame("Пропущено значений"))
 
-print("\nОсновная статистика:")
-print(df.describe())
+print("\nКоличество повторяющихся строк:", df.duplicated().sum())
+print("Возраст за пределами диапазона 16–100:")
+display(df.loc[~df["age"].between(16, 100), ["customer_id", "age"]])
 
-print("\nКоличество клиентов по городам:")
-print(df["city"].value_counts(dropna=False))
+print("Доход выше 200 000:")
+display(df.loc[df["monthly_income"] > 200000,
+               ["customer_id", "monthly_income"]])
 
-print("\nПодозрительные значения:")
-print("Возраст больше 100:",
-      df.loc[df["age"] > 100, ["customer_id", "age"]])
-print("Доход выше 100000:",
-      df.loc[df["monthly_income"] > 100000,
-             ["customer_id", "monthly_income"]])
-print("Посещений больше 30:",
-      df.loc[df["visits_per_month"] > 30,
-             ["customer_id", "visits_per_month"]])
+print("Более 31 посещения в месяц:")
+display(df.loc[df["visits_per_month"] > 31,
+               ["customer_id", "visits_per_month"]])
 
+print("Неуказанные города:")
+display(df.loc[df["city"].str.lower() == "неизвестно",
+               ["customer_id", "city"]])
+numeric_cols = [
+    "age",
+    "monthly_income",
+    "visits_per_month",
+    "satisfaction_score"
+]
+
+for col in numeric_cols:
+    plt.figure(figsize=(7, 4))
+    sns.histplot(data=df, x=col, bins=10, kde=True)
+    plt.title(f"Распределение признака: {col}")
+    plt.xlabel(col)
+    plt.ylabel("Количество клиентов")
+    plt.tight_layout()
+    plt.show()
+corr_data = df[numeric_cols].corr()
+
+plt.figure(figsize=(8, 5))
+sns.heatmap(
+    corr_data,
+    annot=True,
+    cmap="coolwarm",
+    fmt=".2f",
+    vmin=-1,
+    vmax=1
+)
+plt.title("Корреляция числовых признаков")
+plt.tight_layout()
+plt.show()
+print("Итоговая таблица исходных данных")
+pd.set_option("display.max_rows", 30)
+pd.set_option("display.max_columns", None)
+
+display(df.reset_index(drop=True))
+clean_df = df.copy()
+
+# Заполняем пропуски медианными значениями
+for col in ["age", "monthly_income", "visits_per_month",
+            "satisfaction_score"]:
+    clean_df[col] = clean_df[col].fillna(clean_df[col].median())
+
+# Подозрительные значения заменяем пропусками
+clean_df.loc[clean_df["age"] > 100, "age"] = np.nan
+clean_df.loc[clean_df["monthly_income"] > 200000,
+             "monthly_income"] = np.nan
+clean_df.loc[clean_df["visits_per_month"] > 31,
+             "visits_per_month"] = np.nan
+
+# Повторно заполняем пропуски после обработки аномалий
+for col in ["age", "monthly_income", "visits_per_month"]:
+    clean_df[col] = clean_df[col].fillna(clean_df[col].median())
+
+clean_df["city"] = clean_df["city"].replace(
+    {"неизвестно": "Не указан"}
+)
+
+print("Обработанный набор данных:")
+display(clean_df)
